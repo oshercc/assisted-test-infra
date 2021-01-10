@@ -1,8 +1,15 @@
+agentLabel = "${AGENT}"
+
 pipeline {
-    agent { label 'download_logs' }
+    agent { label agentLabel }
 
     parameters {
         string(name: 'REMOTE_SERVICE_URL', defaultValue: 'https://api.openshift.com', description: 'Service URL')
+
+        string(name: 'DOWNLOAD_ALL', defaultValue: params.DOWNLOAD_ALL ?:'', description: 'Collect all logs (not only from failed clusters)')
+        string(name: 'MUST_GATHER', defaultValue: params.MUST_GATHER ?:'--must-gather', description: 'Collect must-gather logs')
+        string(name: 'AGENT', defaultValue: params.AGENT ?:'download_logs',  description: 'Agent to use')
+        booleanParam(name: 'OPEN_TRIAGE_TICKETS', defaultValue: params.OPEN_TRIAGE_TICKETS ?:'true', description: 'Open triage tickets for failing installations')
     }
 
     triggers { cron('H/30 * * * *') }
@@ -26,11 +33,19 @@ pipeline {
             }
         }
 
-        stage('Run') {
+        stage('Download logs') {
             steps {
-                sh "make download_logs"
-                sh "skipper run discovery-infra/create_triage_tickets.py -up ${JIRA_CREDS}"
+                sh "make download_logs ${DOWNLOAD_ALL} ${MUST_GATHER}"
             }
+        }
+
+        stage('Open triage tickets') {
+                when {
+                    expression {${params.OPEN_TRIAGE_TICKETS}}
+                }
+                steps{
+                    sh "skipper run discovery-infra/create_triage_tickets.py -up ${JIRA_CREDS}"
+                }
         }
     }
 
