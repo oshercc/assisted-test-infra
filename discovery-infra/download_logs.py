@@ -5,11 +5,11 @@ import os
 import shutil
 import subprocess
 import time
+import filecmp
 from argparse import ArgumentParser
 from collections import Counter
 from contextlib import suppress
 from datetime import datetime
-
 import assisted_service_client
 import urllib3
 from dateutil.parser import isoparse
@@ -34,7 +34,7 @@ def main():
 
     if args.cluster_id:
         cluster = client.cluster_get(args.cluster_id)
-        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.must_gather)
+        download_logs(client, json.loads(json.dumps(cluster.to_dict(), sort_keys=True, default=str)), args.dest, args.must_gather, args.update_by_events)
     else:
         clusters = client.clusters_list()
 
@@ -44,7 +44,7 @@ def main():
 
         for cluster in clusters:
             if args.download_all or should_download_logs(cluster):
-                download_logs(client, cluster, args.dest, args.must_gather)
+                download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events)
 
         print(Counter(map(lambda cluster: cluster['status'], clusters)))
 
@@ -52,13 +52,27 @@ def main():
 def should_download_logs(cluster: dict):
     return cluster['status'] in [ClusterStatus.ERROR]
 
+def is_update_needed(output_folder: str, update_on_events_update: bool, client: InventoryClient, cluster: dict):
 
-def download_logs(client: InventoryClient, cluster: dict, dest: str,
-                  must_gather: bool, retry_interval: int = RETRY_INTERVAL):
+    if not os.path.isdir(output_folder):
+        return True
+    if not update_on_events_update:
+        return False
 
+    destination_event_file_path = os.path.join(output_folder, f"cluster_{cluster['id']}_events.json")
+    latest_event_file_path = os.path.join("/tmp", f"cluster_{cluster['id']}_events.json")
+
+    with suppress(assisted_service_client.rest.ApiException):
+        client.download_cluster_events(cluster['id'], latest_event_file_path)
+
+    if filecmp.cmp(destination_event_file_path, latest_event_file_path):
+        return False
+    return True
+
+def download_logs(client: InventoryClient, cluster: dict, dest: str, must_gather: bool, update_by_events: bool, retry_interval: int = RETRY_INTERVAL):
     output_folder = get_logs_output_folder(dest, cluster)
 
-    if os.path.isdir(output_folder):
+    if not is_update_needed(output_folder, update_by_events, client, cluster,):
         log.info(f"Skipping. The logs directory {output_folder} already exists.")
         return
 
@@ -76,7 +90,8 @@ def download_logs(client: InventoryClient, cluster: dict, dest: str,
                 client.download_host_ignition(cluster['id'], host_id, os.path.join(output_folder, "cluster_files"))
 
         with suppress(assisted_service_client.rest.ApiException):
-            client.download_cluster_events(cluster['id'], os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
+            client.download_cluster_events(cluster['id'],
+                                           os.path.join(output_folder, f"cluster_{cluster['id']}_events.json"))
             shutil.copy2(os.path.join(os.path.dirname(os.path.realpath(__file__)), "events.html"), output_folder)
 
         with suppress(assisted_service_client.rest.ApiException):
@@ -165,6 +180,7 @@ def handle_arguments():
     parser.add_argument("--cluster-id", help="Cluster id to download its logs", type=str, default=None, nargs='?')
     parser.add_argument("--download-all", help="Download logs from all clusters", action='store_true')
     parser.add_argument("--must-gather", help="must-gather logs", action='store_true')
+    parser.add_argument("--update-by-events", help="Update logs if cluster events were updated", action='store_true')
 
     return parser.parse_args()
 
