@@ -5,7 +5,7 @@
 SHELL=/bin/sh
 CONTAINER_COMMAND = $(shell if [ -x "$(shell command -v docker)" ];then echo "docker" ; else echo "podman";fi)
 DEFAULT_PULL_PARAM = $(shell if [ "${CONTAINER_COMMAND}" = "podman" ];then echo "--pull-always" ; else echo "--pull";fi)
-PULL_PARAM = := $(or ${PULL_PARAM}, ${DEFAULT_PULL_PARAM})
+PULL_PARAM := $(or $(DEFAULT_PULL_PARAM))
 
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 REPORTS = $(ROOT_DIR)/reports
