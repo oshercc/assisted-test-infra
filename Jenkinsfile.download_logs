@@ -28,7 +28,7 @@ pipeline {
 
         stage('Run') {
             steps {
-                sh '''make download_logs ADDITIONAL_PARAMS="--download-all --must-gather"'''
+                sh '''make download_logs ADDITIONAL_PARAMS="'--download-all,  --must-gather'"'''
                 dir ('deploymentRepo') {
                     sh "rm -rf assisted-installer-deployment"
                     sh "git clone 'https://github.com/eranco74/assisted-installer-deployment'"
@@ -38,13 +38,13 @@ pipeline {
         }
     }
 
-    post {
-        failure {
-            script {
-                def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
-                writeJSON(file: 'data.txt', json: data, pretty: 4)
-            }
-            sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
-        }
-    }
+    //post {
+    //    failure {
+    //        script {
+    //            def data = [text: "Attention! ${BUILD_TAG} job failed, see: ${BUILD_URL}"]
+    //            writeJSON(file: 'data.txt', json: data, pretty: 4)
+    //        }
+    //        sh '''curl -X POST -H 'Content-type: application/json' --data-binary "@data.txt"  https://hooks.slack.com/services/${SLACK_TOKEN}'''
+    //    }
+    //}
 }

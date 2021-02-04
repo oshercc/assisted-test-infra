@@ -340,7 +340,7 @@ _download_logs:
 	discovery-infra/download_logs.py $(REMOTE_SERVICE_URL) $(LOGS_DEST) --cluster-id $(CLUSTER_ID) $(ADDITIONAL_PARAMS)
 
 download_logs:
-	skipper make $(SKIPPER_PARAMS) _download_logs $(ADDITIONAL_PARAMS)
+	skipper make $(SKIPPER_PARAMS) _download_logs ADDITIONAL_PARAMS=$(ADDITIONAL_PARAMS)
 
 #######
 # ISO #
