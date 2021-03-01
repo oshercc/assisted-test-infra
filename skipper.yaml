@@ -20,3 +20,4 @@ volumes:
   - /var/ai-logs:/var/ai-logs
   - $HOME/.test-infra/etc/nginx/stream.d:/etc/nginx/stream.d
 env-file: skipper.env
+
