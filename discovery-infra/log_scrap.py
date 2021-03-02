@@ -23,6 +23,7 @@ import assisted_service_client
 from test_infra.assisted_service_api import InventoryClient, create_client
 
 RETRY_INTERVAL = 60 * 5
+MAX_EVENTS = 1000
 
 # metadata fields
 LOG_METADATA_FILE = "log_metadata.yaml"
@@ -101,11 +102,16 @@ class ScrapeEvents:
         return d
 
     def process_cluster(self, cluster):
-
+        cluster_id = cluster["id"]
         with tempfile.NamedTemporaryFile() as temp_event_file:
             self.write_events_file(cluster, temp_event_file.name)
             with open(temp_event_file.name) as f:
                 event_list = json.load(f)
+
+        event_count = len(event_list)
+        if event_count > MAX_EVENTS:
+            log.info(f"Cluster {cluster_id} has {event_count} event records, logging only {MAX_EVENTS}")
+            event_list = event_list[:MAX_EVENTS]
 
         if self.is_update_needed(cluster["id"], event_list):
             metadata_json = self.get_metadata_json(cluster)

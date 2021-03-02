@@ -37,12 +37,11 @@ def convert_field_to_json(converted_field):
 class GetProcessedMetadataJson:
 
     def __init__(self, metadata_json):
-        logger.info("Starting process class")
         self.metadata_json = metadata_json
         self.convert_strings_to_dict()
 
     def get_processed_json(self):
-        self.remove_fields()
+        self.remove_fields_if_exists()
         return self.metadata_json
 
     def convert_strings_to_dict(self):
@@ -52,16 +51,14 @@ class GetProcessedMetadataJson:
         for host in self.metadata_json["cluster"]["hosts"]:
             host["validations_info"] = convert_field_to_json(host["validations_info"])
 
-    def remove_fields(self):
+    def remove_fields_if_exists(self):
         for remove_field in REMOVED_FIELDS:
             try:
                 self.pop_fields(self.metadata_json, remove_field)
             except KeyError:
-                logger.debug(f"key error while removing {remove_field}")
-
+                pass
 
     # Delete a fieald in string path joind by "."
-    # example
     def pop_fields(self, p_json, pop_str):
         if type(p_json) == list:
             for l in p_json:
