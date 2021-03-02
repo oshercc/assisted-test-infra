@@ -62,7 +62,10 @@ class ScrapeEvents:
                 time.sleep(RETRY_INTERVAL)
                 break
 
-            for cluster in clusters:
+            cluster_count = len(clusters)
+            for i, cluster in enumerate(clusters):
+                cluster_id = cluster["id"]
+                log.info(f"{i}/{cluster_count}: Starting process of cluster {cluster_id}")
                 self.process_cluster(cluster)
 
     def get_last_cluster_event_time(self, cluster_id: str):
@@ -105,7 +108,6 @@ class ScrapeEvents:
 
     def process_cluster(self, cluster):
         cluster_id = cluster["id"]
-        log.info(f"processing {cluster_id}")
         with tempfile.NamedTemporaryFile() as temp_event_file:
             self.write_events_file(cluster, temp_event_file.name)
             with open(temp_event_file.name) as f:
@@ -119,7 +121,7 @@ class ScrapeEvents:
         metadata_json = self.get_metadata_json(cluster)
 
         if self.backup_destination:
-            self.save_new_backup(cluster["id"], event_list, metadata_json)
+            self.save_new_backup(cluster_id, event_list, metadata_json)
 
         cluster_bash_data = process_metadata(metadata_json)
         event_names = get_cluster_object_names(cluster_bash_data)
@@ -148,6 +150,7 @@ class ScrapeEvents:
         try:
             res = self.es.create(index=self.index, body=doc, id=id_)
         except elasticsearch.exceptions.ConflictError:
+            log.debug("Hit logged event")
             return None
         return res
 
