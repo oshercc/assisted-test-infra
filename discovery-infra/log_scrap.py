@@ -32,6 +32,7 @@ MD_CLUSTER_DELETED = "cluster_deleted"
 
 NO_UPDATE_NEEDED_FIELDS = [MD_CLUSTER_DELETED, MD_CLUSTER_INSTALLED]
 FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
+UUID_REGEX = r'[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}'
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -158,14 +159,16 @@ class ScrapeEvents:
 def get_no_name_message(event_message: str, event_names: list):
     for name in event_names:
         event_message = event_message.replace(name, "Name")
+    event_message = re.sub(UUID_REGEX, "UUID", event_message)
     return event_message
 
 def get_cluster_object_names(cluster_bash_data):
-    strings_to_remove = [cluster_bash_data["cluster"]["name"]]
+    strings_to_remove = list
     for host in cluster_bash_data["cluster"]["hosts"]:
         host_name = host.get("requested_hostname", None)
         if host_name:
             strings_to_remove.append(host_name)
+    strings_to_remove.append(cluster_bash_data["cluster"]["name"])
     return strings_to_remove
 
 def process_metadata(metadata_json):
