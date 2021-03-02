@@ -165,7 +165,7 @@ def get_no_name_message(event_message: str, event_names: list):
     for name in event_names:
         event_message = event_message.replace(name, "Name")
     event_message = re.sub(UUID_REGEX, "UUID", event_message)
-    event_message = re.sub(r"^Host .*:", "Host Name:", event_message)
+    event_message = re.sub(r"^Host \S+:", "Host Name:", event_message)
     return event_message
 
 def get_cluster_object_names(cluster_bash_data):
