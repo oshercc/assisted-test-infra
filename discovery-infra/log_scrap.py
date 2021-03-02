@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 import os
 import time
 import json
@@ -163,7 +164,7 @@ def get_no_name_message(event_message: str, event_names: list):
     return event_message
 
 def get_cluster_object_names(cluster_bash_data):
-    strings_to_remove = list
+    strings_to_remove = list()
     for host in cluster_bash_data["cluster"]["hosts"]:
         host_name = host.get("requested_hostname", None)
         if host_name:
@@ -186,9 +187,9 @@ def process_event_doc(event_data, cluster_bash_data):
 def handle_arguments():
     parser = ArgumentParser(description="Elastify events")
     parser.add_argument("inventory_url", help="URL of remote inventory", type=str)
-    parser.add_argument("es_server", help="Elasticsearch server", type=str)
-    parser.add_argument("es_user", help="Elasticsearch server", type=str)
-    parser.add_argument("es_pass", help="Elasticsearch server", type=str)
+    parser.add_argument("-es", "--es_server", help="Elasticsearch server", type=str)
+    parser.add_argument("-eu", "--es_user", help="Elasticsearch user", type=str)
+    parser.add_argument("-ep", "--es_pass", help="Elasticsearch password", type=str)
     parser.add_argument("--backup-destination", help="Path to save backup, if empty no back up saved", default=None, type=str)
 
     return parser.parse_args()

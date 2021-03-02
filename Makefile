@@ -366,7 +366,7 @@ download_cluster_logs:
 ##############
 
 _scrape_service_events:
-	discovery-infra/log_scrap.py $(REMOTE_SERVICE_URL) $(ES_SERVER) $(ES_USER) $(ES_PASS) --backup-destination $(BACKUP_DESTINATION)
+	discovery-infra/log_scrap.py $(REMOTE_SERVICE_URL) -es $(ES_SERVER) -eu $(ES_USER) -ep $(ES_PASS) --backup-destination $(BACKUP_DESTINATION)
 
 scrape_service_events:
 	skipper make $(SKIPPER_PARAMS) _scrape_service_events
