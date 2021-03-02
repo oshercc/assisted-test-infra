@@ -105,6 +105,7 @@ class ScrapeEvents:
 
     def process_cluster(self, cluster):
         cluster_id = cluster["id"]
+        log.info(f"processing {cluster_id}")
         with tempfile.NamedTemporaryFile() as temp_event_file:
             self.write_events_file(cluster, temp_event_file.name)
             with open(temp_event_file.name) as f:
@@ -115,20 +116,20 @@ class ScrapeEvents:
             log.info(f"Cluster {cluster_id} has {event_count} event records, logging only {MAX_EVENTS}")
             event_list = event_list[:MAX_EVENTS]
 
-        if self.is_update_needed(cluster["id"], event_list):
-            metadata_json = self.get_metadata_json(cluster)
-            if self.backup_destination:
-                self.save_new_backup(cluster["id"], event_list, metadata_json)
+        metadata_json = self.get_metadata_json(cluster)
 
-            cluster_bash_data = process_metadata(metadata_json)
-            event_names = get_cluster_object_names(cluster_bash_data)
-            for event in event_list[::-1]:
-                cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
-                process_event_doc(event, cluster_bash_data)
-                doc_id = get_doc_id(cluster_bash_data)
-                ret = self.log_doc(cluster_bash_data, doc_id)
-                if not ret:
-                    break
+        if self.backup_destination:
+            self.save_new_backup(cluster["id"], event_list, metadata_json)
+
+        cluster_bash_data = process_metadata(metadata_json)
+        event_names = get_cluster_object_names(cluster_bash_data)
+        for event in event_list[::-1]:
+            cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
+            process_event_doc(event, cluster_bash_data)
+            doc_id = get_doc_id(cluster_bash_data)
+            ret = self.log_doc(cluster_bash_data, doc_id)
+            if not ret:
+                break
 
     def save_new_backup(self,cluster_id, event_list, metadata_json):
         cluster_backup_directory_path = os.path.join(self.backup_destination, f"cluster_{cluster_id}")
@@ -161,6 +162,7 @@ def get_no_name_message(event_message: str, event_names: list):
     for name in event_names:
         event_message = event_message.replace(name, "Name")
     event_message = re.sub(UUID_REGEX, "UUID", event_message)
+    event_message = re.sub(r"^Host .*:", "Host Name:", event_message)
     return event_message
 
 def get_cluster_object_names(cluster_bash_data):
