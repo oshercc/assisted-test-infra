@@ -49,7 +49,8 @@ class GetProcessedMetadataJson:
             self.metadata_json["cluster"]["validations_info"] = convert_field_to_json(self.metadata_json["cluster"]["validations_info"])
 
         for host in self.metadata_json["cluster"]["hosts"]:
-            host["validations_info"] = convert_field_to_json(host["validations_info"])
+            if host.get("validations_info", None):
+                host["validations_info"] = convert_field_to_json(host["validations_info"])
 
     def remove_fields_if_exists(self):
         for remove_field in REMOVED_FIELDS:
