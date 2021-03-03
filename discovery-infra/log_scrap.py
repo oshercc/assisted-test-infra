@@ -44,7 +44,7 @@ class ScrapeEvents:
     def __init__(self, inventory_url: str, es_server: str, es_user:str, es_pass:str, backup_destination: str):
         self.client = create_client(url=inventory_url)
 
-        self.index = "test_index"
+        self.index = "assisted-service-events"
         self.es = elasticsearch.Elasticsearch(es_server, http_auth=(es_user, es_pass))
 
         self.backup_destination = backup_destination

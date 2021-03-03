@@ -39,6 +39,16 @@ class GetProcessedMetadataJson:
     def __init__(self, metadata_json):
         self.metadata_json = metadata_json
         self.convert_strings_to_dict()
+        self.set_host_vendor()
+
+    def set_host_vendor(self):
+        for host in self.metadata_json["cluster"]["hosts"]:
+            if "inventory" not in host:
+                return
+            inventory = json.loads(host["inventory"])
+            vendor = inventory.get("system_vendor", None)
+            if vendor:
+                host["vendor"] = vendor
 
     def get_processed_json(self):
         self.remove_fields_if_exists()
