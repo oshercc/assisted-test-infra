@@ -26,13 +26,8 @@ from test_infra.assisted_service_api import InventoryClient, create_client
 
 RETRY_INTERVAL = 60 * 5
 MAX_EVENTS = 1000
+INDEX = "assisted-service-events"
 
-# metadata fields
-LOG_METADATA_FILE = "log_metadata.yaml"
-MD_CLUSTER_INSTALLED = "cluster_installed"
-MD_CLUSTER_DELETED = "cluster_deleted"
-
-NO_UPDATE_NEEDED_FIELDS = [MD_CLUSTER_DELETED, MD_CLUSTER_INSTALLED]
 FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
 UUID_REGEX = r'[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}'
 
@@ -45,7 +40,7 @@ class ScrapeEvents:
     def __init__(self, inventory_url: str, es_server: str, es_user:str, es_pass:str, backup_destination: str):
         self.client = create_client(url=inventory_url)
 
-        self.index = "test_index"
+        self.index = INDEX
         self.es = elasticsearch.Elasticsearch(es_server, http_auth=(es_user, es_pass))
 
         self.backup_destination = backup_destination
@@ -173,7 +168,7 @@ def get_no_name_message(event_message: str, event_names: list):
     for name in event_names:
         event_message = event_message.replace(name, "Name")
     event_message = re.sub(UUID_REGEX, "UUID", event_message)
-    event_message = re.sub(r"^Host \S+:", "Host Name:", event_message)
+    event_message = re.sub(r"^Host \S+:", "", event_message)
     return event_message
 
 def get_cluster_object_names(cluster_bash_data):
