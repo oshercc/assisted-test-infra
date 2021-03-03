@@ -5,6 +5,7 @@ import os
 import time
 import json
 import yaml
+import random
 import urllib3
 import logging
 import hashlib
@@ -56,6 +57,7 @@ class ScrapeEvents:
 
         while True:
             clusters = self.get_clusters()
+            random.shuffle(clusters)
 
             if not clusters:
                 log.warn(f'No clusters were found, waiting {RETRY_INTERVAL/60} min')
