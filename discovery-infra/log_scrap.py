@@ -45,7 +45,7 @@ class ScrapeEvents:
     def __init__(self, inventory_url: str, es_server: str, es_user:str, es_pass:str, backup_destination: str):
         self.client = create_client(url=inventory_url)
 
-        self.index = "assisted-service-events"
+        self.index = "test_index"
         self.es = elasticsearch.Elasticsearch(es_server, http_auth=(es_user, es_pass))
 
         self.backup_destination = backup_destination
@@ -109,11 +109,16 @@ class ScrapeEvents:
         return d
 
     def process_cluster(self, cluster):
-        cluster_id = cluster["id"]
         with tempfile.NamedTemporaryFile() as temp_event_file:
             self.write_events_file(cluster, temp_event_file.name)
             with open(temp_event_file.name) as f:
                 event_list = json.load(f)
+
+        self.elastefy_events(cluster, event_list)
+
+    def elastefy_events(self, cluster, event_list):
+
+        cluster_id = cluster["id"]
 
         event_count = len(event_list)
         if event_count > MAX_EVENTS:
@@ -127,6 +132,7 @@ class ScrapeEvents:
 
         cluster_bash_data = process_metadata(metadata_json)
         event_names = get_cluster_object_names(cluster_bash_data)
+
         for event in event_list[::-1]:
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
             process_event_doc(event, cluster_bash_data)
