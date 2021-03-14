@@ -65,39 +65,6 @@ class ScrapeEvents:
                 log.info(f"{i}/{cluster_count}: Starting process of cluster {cluster_id}")
                 self.process_cluster(cluster)
 
-    def get_last_cluster_event_time(self, cluster_id: str):
-        try:
-            res = self.get_last_cluster_event(cluster_id)
-        except elasticsearch.exceptions.NotFoundError:
-            return None
-        if not res["hits"]["hits"]:
-            return None
-        return res["hits"]["hits"][0]["_source"]["event_time"]
-
-    def get_last_cluster_event(self, cluster_id):
-        res = self.es.search(index=self.index, body={
-            "size": 1,
-            "sort": {"event_time": "desc"},
-            "query": {
-                "match_phrase": {"cluster_id": f"\"{cluster_id}\""}
-            }
-        })
-        return res
-
-    def is_update_needed(self, cluster_id, event_list):
-        lest_logged_event_time = self.get_last_cluster_event_time(cluster_id)
-        if not lest_logged_event_time:
-            log.info(f"Cluster {cluster_id} has no record, starting new cluster update")
-            return True
-
-        last_event_time = event_list[-1]["event_time"]
-        tdelta = datetime.strptime(last_event_time, FMT) - datetime.strptime(lest_logged_event_time, FMT)
-        if tdelta == 0:
-            log.info(f"No new events for {cluster_id}, continuing")
-            return False
-        log.info(f"New events for cluster {cluster_id}")
-        return True
-
     def get_metadata_json(self, cluster: dict):
         d = {'cluster': cluster}
         d.update(self.client.get_versions())
@@ -129,9 +96,11 @@ class ScrapeEvents:
         event_names = get_cluster_object_names(cluster_bash_data)
 
         for event in event_list[::-1]:
+            if is_event_skippable(event):
+                continue
+            doc_id = get_doc_id(cluster_bash_data)
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
             process_event_doc(event, cluster_bash_data)
-            doc_id = get_doc_id(cluster_bash_data)
             ret = self.log_doc(cluster_bash_data, doc_id)
             if not ret:
                 break
@@ -191,6 +160,11 @@ def get_doc_id(event_json):
 
 def process_event_doc(event_data, cluster_bash_data):
     cluster_bash_data.update(event_data)
+
+def is_event_skippable(event):
+    if "reached installation stage Writing image to disk" in event["message"]:
+        return True
+    return False
 
 def handle_arguments():
     parser = ArgumentParser(description="Elastify events")
