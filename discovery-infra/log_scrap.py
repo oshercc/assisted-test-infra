@@ -98,7 +98,7 @@ class ScrapeEvents:
         for event in event_list[::-1]:
             if is_event_skippable(event):
                 continue
-            doc_id = get_doc_id(cluster_bash_data)
+            doc_id = get_doc_id(event)
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
             process_event_doc(event, cluster_bash_data)
             ret = self.log_doc(cluster_bash_data, doc_id)
