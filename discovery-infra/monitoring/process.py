@@ -21,6 +21,10 @@ REMOVED_FIELDS = [
     "link"
 ]
 
+SKIPPABLE_EVENTS = [
+    "reached installation stage Writing image to disk"
+]
+
 logging.basicConfig(level=logging.WARN, format='%(levelname)-10s %(message)s')
 logger = logging.getLogger(__name__)
 logging.getLogger("__main__").setLevel(logging.INFO)
@@ -84,3 +88,8 @@ class GetProcessedMetadataJson:
         self.pop_fields(p_json[pop_list[0]], pop_list[1])
         return
 
+def is_event_skippable(event):
+    for skippable_text in SKIPPABLE_EVENTS:
+        if skippable_text in event["message"]:
+            return True
+    return False

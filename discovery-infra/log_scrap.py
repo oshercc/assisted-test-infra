@@ -96,7 +96,7 @@ class ScrapeEvents:
         event_names = get_cluster_object_names(cluster_bash_data)
 
         for event in event_list[::-1]:
-            if is_event_skippable(event):
+            if process.is_event_skippable(event):
                 continue
             doc_id = get_doc_id(event)
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
@@ -161,10 +161,6 @@ def get_doc_id(event_json):
 def process_event_doc(event_data, cluster_bash_data):
     cluster_bash_data.update(event_data)
 
-def is_event_skippable(event):
-    if "reached installation stage Writing image to disk" in event["message"]:
-        return True
-    return False
 
 def handle_arguments():
     parser = ArgumentParser(description="Elastify events")
@@ -179,12 +175,17 @@ def handle_arguments():
 def main():
     args = handle_arguments()
 
-    scrape_events = ScrapeEvents(inventory_url=args.inventory_url,
-                                 es_server=args.es_server,
-                                 es_user = args.es_user,
-                                 es_pass = args.es_pass,
-                                 backup_destination=args.backup_destination)
-    scrape_events.run_service()
+    while True:
+        try:
+            scrape_events = ScrapeEvents(inventory_url=args.inventory_url,
+                                         es_server=args.es_server,
+                                         es_user = args.es_user,
+                                         es_pass = args.es_pass,
+                                         backup_destination=args.backup_destination)
+            scrape_events.run_service()
+        except Exception as EX:
+            log.warn(f"Elastefying logs failed with error {EX}, sleeping for {RETRY_INTERVAL} and retrying")
+            time.sleep(RETRY_INTERVAL)
 
 if __name__ == '__main__':
     main()
