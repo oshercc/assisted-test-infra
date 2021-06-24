@@ -137,6 +137,9 @@ class ScrapeEvents:
             cluster_bash_data["no_name_message"] = get_no_name_message(event["message"], event_names)
             cluster_bash_data["inventory_url"] = self.inventory_url
 
+            if "props" in event:
+                event["event.props"] = json.loads(event["props"])
+
             process_event_doc(event, cluster_bash_data)
             ret = self.log_doc(cluster_bash_data, doc_id)
 
