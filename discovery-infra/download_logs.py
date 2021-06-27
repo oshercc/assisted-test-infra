@@ -65,7 +65,7 @@ def main():
             return
 
         for cluster in clusters:
-            cluster_events = client.get_events(cluster_id=cluster["id"], categories=["metrics"])
+            cluster_events = client.get_events(cluster_id=cluster["id"], categories=["user", "metrics"])
             if args.download_all or should_download_logs(cluster_events):
                 download_logs(client, cluster, args.dest, args.must_gather, args.update_by_events,
                               pull_secret=args.pull_secret)
@@ -81,12 +81,11 @@ def get_clusters(client, all_cluster):
     return client.clusters_list()
 
 
+
 def should_download_logs(cluster_events: list):
     for event in cluster_events:
-        if event["message"] == "cluster.installation.results":
-            event_props = json.loads(event["props"])
-            if "result" in event_props and event_props["result"] == "error":
-                return True
+        if ("Updated status of cluster" in event["message"] and "to error" in event["message"]) or ("Failed installing cluster" in event["message"]):
+            return True
     return False
 
 def min_number_of_log_files(cluster, is_controller_expected):
